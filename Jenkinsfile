@@ -6,7 +6,7 @@ pipeline {
         stage('Checkout from GitHub') {
             steps {
                 git branch: 'master',
-                    url: 'https://github.com/laxmi916/node-k8s-app.git'
+                    url: 'https://github.com/pramodhpillitla/node-k8s-app.git'
             }
         }
 
@@ -20,14 +20,14 @@ pipeline {
             steps {
                 sh '''
                 docker build -t my-k8s-app:${BUILD_NUMBER} .
-                docker tag my-k8s-app:${BUILD_NUMBER} laxmi916/my-k8s-app:${BUILD_NUMBER}
+                docker tag my-k8s-app:${BUILD_NUMBER} pramodhpillitla/my-k8s-app:${BUILD_NUMBER}
                 '''
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                sh 'docker push laxmi916/my-k8s-app:${BUILD_NUMBER}'
+                sh 'docker push pramodhpillitla/my-k8s-app:${BUILD_NUMBER}'
             }
         }
 
