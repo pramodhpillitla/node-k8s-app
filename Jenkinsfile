@@ -12,50 +12,41 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                bat 'npm install'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                docker build -t my-k8s-app:${BUILD_NUMBER} .
-                docker tag my-k8s-app:${BUILD_NUMBER} pramodhpillitla/my-k8s-app:${BUILD_NUMBER}
+                bat '''
+                docker build -t node-docker-app:%BUILD_NUMBER% .
+                docker tag node-docker-app:%BUILD_NUMBER% pramodhpillitla/node-docker-app:%BUILD_NUMBER%
                 '''
             }
         }
 
         stage('Push Docker Image') {
-            steps {
-                sh 'docker push pramodhpillitla/my-k8s-app:${BUILD_NUMBER}'
-            }
-        }
-
-    stage('Start Minikube if not running') {
     steps {
-        sh '''
-        if ! minikube status | grep -q "apiserver: Running"; then
-            echo "Minikube is not running. Starting now..."
-            minikube start --driver=docker --memory=2048 --cpus=2
-        fi
-        '''
+        withCredentials([usernamePassword(
+            credentialsId: 'docker-hub-cred',
+            usernameVariable: 'DOCKER_USER',
+            passwordVariable: 'DOCKER_PASS'
+        )]) {
+            bat '''
+            docker login -u %DOCKER_USER% -p %DOCKER_PASS%
+            docker push pramodhpillitla/node-docker-app:%BUILD_NUMBER%
+            '''
+        }
     }
 }
-
-        stage('Deploy to Kubernetes') {
+        
+        stage('Create container') {
             steps {
-                sh '''
-                # Replace image tag inside deployment.yaml
-                sed -i "s/IMAGE_TAG/${BUILD_NUMBER}/g" k8s/deployment.yaml
-
-                # Load image into Minikube
-                minikube image load laxmi916/my-k8s-app:${BUILD_NUMBER}
-
-                # Apply manifests
-                minikube kubectl -- apply -f k8s/deployment.yaml
-                minikube kubectl -- apply -f k8s/service.yaml
-                '''
+                bat 'docker run pramodhpillitla/node-docker-app:%BUILD_NUMBER%'
             }
         }
+
+
+
     }
 }
